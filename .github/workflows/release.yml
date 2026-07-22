@@ -93,6 +93,7 @@ jobs:
           openssl pkcs12 -export -in cert.pem -inkey key.pem -out release-keystore -name immich -passout pass:"$KEYSTORE_PASS" -legacy
 
       - name: Build APK and AAB
+        id: build
         env:
           RELEASE_KEYSTORE_PATH: ${{ github.workspace }}/release-keystore
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
@@ -101,9 +102,11 @@ jobs:
         run: |
           if [ -f "$RELEASE_KEYSTORE_PATH" ]; then
             ./gradlew assembleRelease bundleRelease
+            echo "build_type=release" >> $GITHUB_OUTPUT
           else
             echo "No keystore file found, building debug APK instead"
             ./gradlew assembleDebug
+            echo "build_type=debug" >> $GITHUB_OUTPUT
           fi
 
       - name: Get commit messages since last release
@@ -137,16 +140,16 @@ jobs:
           mkdir -p play-whatsnew
           python3 - <<'PY'
           from pathlib import Path
-          
-          notes = Path("commits_playstore.txt").read_text()
-          Path("play-whatsnew/whatsnew-en-US").write_text(notes[:500])
+          if Path("commits_playstore.txt").exists():
+              notes = Path("commits_playstore.txt").read_text()
+              Path("play-whatsnew/whatsnew-en-US").write_text(notes[:500])
           PY
-          ls -ltr app/build/outputs/bundle/release
-          ls -ltr app/build/outputs/apk/release
+          ls -ltr app/build/outputs/bundle/release 2>/dev/null || echo "No release bundle output"
+          ls -ltr app/build/outputs/apk/release 2>/dev/null || echo "No release APK output"
 
       - name: Upload AAB to Google Play
         uses: r0adkll/upload-google-play@v1.1.5
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.publishPlayStore }}
+        if: steps.build.outputs.build_type == 'release' && (github.event_name != 'workflow_dispatch' || inputs.publishPlayStore)
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
           packageName: nl.giejay.android.tv.immich
@@ -170,7 +173,7 @@ jobs:
           prerelease: false
 
       - name: Set APK asset path
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.publishGitHub }}
+        if: steps.build.outputs.build_type == 'release' && (github.event_name != 'workflow_dispatch' || inputs.publishGitHub)
         id: set_apk_path
         run: |
           APK_PATH=$(ls -1 app/build/outputs/apk/release/*.apk | head -n 1)
