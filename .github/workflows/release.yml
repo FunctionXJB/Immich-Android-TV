@@ -160,42 +160,26 @@ jobs:
           status: ${{ vars.PLAY_STORE_STATUS || 'completed' }}
           whatsNewDirectory: play-whatsnew
 
-      - name: Create Release
-        id: create_release
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.publishGitHub }}
-        uses: actions/create-release@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && steps.version.outputs.release_name || github.ref_name }}
-          release_name: Release ${{ steps.version.outputs.release_name }}
-          body: |
-            ${{ steps.set_release_notes.outputs.value }}
-          draft: false
-          prerelease: false
-
-      - name: Set APK asset path
+      - name: Create GitHub Release
         if: steps.build.outputs.build_type == 'release' && (github.event_name != 'workflow_dispatch' || inputs.publishGitHub)
-        id: set_apk_path
-        run: |
-          APK_PATH=$(ls -1 app/build/outputs/apk/release/*.apk | head -n 1)
-          if [ -z "$APK_PATH" ]; then
-            echo "No APK found in app/build/outputs/apk/release"
-            exit 1
-          fi
-          APK_NAME=$(basename "$APK_PATH")
-          echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
-          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
-          echo "APK Name: $APK_NAME"
-          echo "APK Path: $APK_PATH"
-
-      - name: Upload APK Asset
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.publishGitHub }}
-        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.set_apk_path.outputs.apk_path }}
-          asset_name: ${{ steps.set_apk_path.outputs.apk_name }}
-          asset_content_type: application/vnd.android.package-archive
+        run: |
+          TAG="${{ github.event_name == 'workflow_dispatch' && steps.version.outputs.release_name || github.ref_name }}"
+          TITLE="Release ${{ steps.version.outputs.release_name }}"
+          NOTES=$(cat commits.txt 2>/dev/null || echo "")
+          APK=$(ls -1 app/build/outputs/apk/release/*.apk 2>/dev/null | head -n 1 || true)
+          AAB=$(ls -1 app/build/outputs/bundle/release/*.aab 2>/dev/null | head -n 1 || true)
+          
+          # Delete existing release if any, then create fresh
+          gh release delete "$TAG" --yes 2>/dev/null || true
+          
+          ASSETS=""
+          if [ -n "$APK" ]; then ASSETS="$APK"; fi
+          if [ -n "$AAB" ]; then ASSETS="$ASSETS $AAB"; fi
+          
+          if [ -n "$ASSETS" ]; then
+            gh release create "$TAG" $ASSETS --title "$TITLE" --notes "$NOTES"
+          else
+            gh release create "$TAG" --title "$TITLE" --notes "$NOTES"
+          fi
