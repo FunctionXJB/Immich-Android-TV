@@ -83,18 +83,28 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
           KEYSTORE_PASS: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
         run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "No keystore secret available, skipping keystore decode"
+            exit 0
+          fi
           echo "$KEYSTORE_BASE64" | base64 --decode > release-keystore-orig
           openssl pkcs12 -in release-keystore-orig -nodes -nocerts -out key.pem -passin pass:"$KEYSTORE_PASS"
           openssl pkcs12 -in release-keystore-orig -nokeys -out cert.pem -passin pass:"$KEYSTORE_PASS"
           openssl pkcs12 -export -in cert.pem -inkey key.pem -out release-keystore -name immich -passout pass:"$KEYSTORE_PASS" -legacy
 
-      - name: Build signed APK and AAB
+      - name: Build APK and AAB
         env:
           RELEASE_KEYSTORE_PATH: ${{ github.workspace }}/release-keystore
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: ./gradlew assembleRelease bundleRelease
+        run: |
+          if [ -f "$RELEASE_KEYSTORE_PATH" ]; then
+            ./gradlew assembleRelease bundleRelease
+          else
+            echo "No keystore file found, building debug APK instead"
+            ./gradlew assembleDebug
+          fi
 
       - name: Get commit messages since last release
         id: get_commits
