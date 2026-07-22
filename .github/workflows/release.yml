@@ -81,8 +81,12 @@ jobs:
       - name: Decode Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > release-keystore
+          echo "$KEYSTORE_BASE64" | base64 --decode > release-keystore-orig
+          openssl pkcs12 -in release-keystore-orig -nodes -nocerts -out key.pem -passin pass:"$KEYSTORE_PASS"
+          openssl pkcs12 -in release-keystore-orig -nokeys -out cert.pem -passin pass:"$KEYSTORE_PASS"
+          openssl pkcs12 -export -in cert.pem -inkey key.pem -out release-keystore -name immich -passout pass:"$KEYSTORE_PASS" -legacy
 
       - name: Build signed APK and AAB
         env:

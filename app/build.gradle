@@ -28,6 +28,7 @@ android {
             storePassword System.getenv("RELEASE_KEYSTORE_PASSWORD") ?: "dummy"
             keyAlias System.getenv("RELEASE_KEY_ALIAS") ?: "immich"
             keyPassword System.getenv("RELEASE_KEY_PASSWORD") ?: "dummy"
+            storeType "pkcs12"
         }
     }
 
