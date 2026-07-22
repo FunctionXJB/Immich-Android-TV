@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_id": "",
-    "project_number": "",
-    "firebase_url": ""
+    "project_id": "placeholder",
+    "project_number": "000000000000",
+    "firebase_url": "https://placeholder.firebaseio.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "0:000000000000:android:0000000000000000",
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
         "android_client_info": {
           "package_name": "nl.giejay.android.tv.immich",
           "certificate_hash": []
@@ -15,7 +15,13 @@
       },
       "api_key": [
         {
-          "current_key": ""
+          "current_key": "AIzaSyPlaceholderKey0000000000000000000000"
+        }
+      ],
+      "oauth_client": [
+        {
+          "client_id": "000000000000-00000000000000000000000000000000.apps.googleusercontent.com",
+          "client_type": 3
         }
       ]
     }
