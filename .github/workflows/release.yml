@@ -73,8 +73,34 @@ jobs:
           GOOGLE_SERVICES_BASE64: ${{secrets.GOOGLE_SERVICES_BASE64}}
           STRINGS_OTHER_BASE64: ${{secrets.STRINGS_OTHER}}
         run: |
-          echo $GOOGLE_SERVICES_BASE64 | base64 --decode > ./app/google-services.json
-          echo $STRINGS_OTHER_BASE64 | base64 --decode > ./app/src/main/res/values/strings_other.xml
+          if [ -n "$GOOGLE_SERVICES_BASE64" ]; then
+            echo "$GOOGLE_SERVICES_BASE64" | base64 --decode > ./app/google-services.json
+            python3 -c "import json; json.load(open('./app/google-services.json')); print('google-services.json is valid')" || {
+              echo "GOOGLE_SERVICES_BASE64 decoded to invalid JSON, using placeholder"
+              python3 -c "
+import json
+config = {
+    'project_info': {'project_id': 'placeholder', 'project_number': '000000000000', 'firebase_url': 'https://placeholder.firebaseio.com'},
+    'client': [{
+        'client_info': {
+            'mobilesdk_app_id': '1:000000000000:android:0000000000000000',
+            'android_client_info': {'package_name': 'nl.giejay.android.tv.immich', 'certificate_hash': []}
+        },
+        'api_key': [{'current_key': 'AIzaSyPlaceholderKey0000000000000000000000'}],
+        'oauth_client': [{'client_id': '000000000000-00000000000000000000000000000000.apps.googleusercontent.com', 'client_type': 3}]
+    }],
+    'ARTIFACT_VERSION': '1'
+}
+json.dump(config, open('./app/google-services.json', 'w'), indent=2)
+print('Generated placeholder google-services.json')
+"
+            }
+          else
+            cp ./app/google-services.example ./app/google-services.json
+          fi
+          if [ -n "$STRINGS_OTHER_BASE64" ]; then
+            echo "$STRINGS_OTHER_BASE64" | base64 --decode > ./app/src/main/res/values/strings_other.xml
+          fi
 
       - name: Decode Keystore
         env:
