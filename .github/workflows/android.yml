@@ -49,12 +49,12 @@ jobs:
       env:
         KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
       run: |
-        echo "$KEYSTORE_BASE64" | base64 --decode > release-keystore.jks
+        echo "$KEYSTORE_BASE64" | base64 --decode > release-keystore
 
     - name: Build signed APK
       if: steps.keystore_check.outputs.available == 'true'
       env:
-        RELEASE_KEYSTORE_PATH: ${{ github.workspace }}/release-keystore.jks
+        RELEASE_KEYSTORE_PATH: ${{ github.workspace }}/release-keystore
         RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
         RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
         RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
