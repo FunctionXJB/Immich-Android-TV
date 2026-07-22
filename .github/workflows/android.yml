@@ -28,33 +28,7 @@ jobs:
       env:
         STRINGS_OTHER_BASE64: ${{secrets.STRINGS_OTHER}}
       run: |
-         python3 -c "
-import json, os
-config = {
-    'project_info': {
-        'project_id': 'placeholder',
-        'project_number': '000000000000',
-        'firebase_url': 'https://placeholder.firebaseio.com'
-    },
-    'client': [{
-        'client_info': {
-            'mobilesdk_app_id': '1:000000000000:android:0000000000000000',
-            'android_client_info': {
-                'package_name': 'nl.giejay.android.tv.immich',
-                'certificate_hash': []
-            }
-        },
-        'api_key': [{'current_key': 'AIzaSyPlaceholderKey0000000000000000000000'}],
-        'oauth_client': [{
-            'client_id': '000000000000-00000000000000000000000000000000.apps.googleusercontent.com',
-            'client_type': 3
-        }]
-    }],
-    'ARTIFACT_VERSION': '1'
-}
-json.dump(config, open('./app/google-services.json', 'w'), indent=2)
-print('Generated placeholder google-services.json for CI build')
-"
+         python3 .github/scripts/write_google_services.py
          if [ -n "$STRINGS_OTHER_BASE64" ]; then
            echo "$STRINGS_OTHER_BASE64" | base64 --decode > ./app/src/main/res/values/strings_other.xml
          fi
